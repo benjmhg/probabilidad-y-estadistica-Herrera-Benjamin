@@ -1,0 +1,54 @@
+---
+title: "Lab 3 - Analisis de metricas de software y DevOps"
+author: "Benjamin Herrera"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE)
+library(tidyverse)
+library(moments)
+```
+
+## 1. Carga y limpieza
+```{r}
+df <- read_csv("devops_metrics_clean.csv")
+glimpse(df)
+```
+
+## 2. Descriptiva univariada
+```{r}
+describir <- function(x) tibble(
+  media = mean(x, na.rm=TRUE), mediana = median(x, na.rm=TRUE),
+  desv_est = sd(x, na.rm=TRUE), asimetria = skewness(x, na.rm=TRUE),
+  curtosis = kurtosis(x, na.rm=TRUE))
+describir(df$build_time_min)
+```
+
+## 3. Frecuencias (Sturges)
+```{r}
+k <- ceiling(1 + 3.322*log10(nrow(df)))
+df %>% mutate(clase=cut(build_time_min,k)) %>% count(clase)
+```
+
+## 4. Analisis por grupos
+```{r}
+df %>% group_by(priority) %>%
+  summarise(bugs=mean(num_bugs), fallos=mean(deploy_status=="failed"))
+```
+
+## 5. Relaciones bivariadas
+```{r}
+cor(df %>% select(commit_size_loc, num_bugs), use="complete.obs")
+```
+
+## 6. Visualizacion
+```{r}
+ggplot(df, aes(build_time_min)) + geom_histogram(bins=14, fill="steelblue")
+```
+
+## 7. Conclusiones
+- A mayor prioridad, mas bugs y mas fallos.
+- Los commits grandes se asocian a mas bugs (correlacion 0.42).
+- Correlacion no implica causalidad.
